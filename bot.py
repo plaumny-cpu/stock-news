@@ -14,7 +14,7 @@ FINNHUB_KEY  = os.environ.get("FINNHUB_KEY", "")
 STATE_FILE   = Path("seen.json")
 MAX_PER_RUN  = 12          # กันสแปมตอนรันครั้งแรก
 KEEP_STATE   = 3000        # เก็บ id ข่าวเก่ากี่รายการ
-UA           = "StockNewsBot/1.0 (your-email@example.com)"   # ← แก้เป็นอีเมลคุณ
+UA           = "StockNewsBot/1.0 (plaumny@gmail.com)"   # ← แก้เป็นอีเมลคุณ
 
 # ใส่ ticker ที่สนใจ; ปล่อยว่าง [] = รับทุกข่าว
 WATCH_TICKERS = []
