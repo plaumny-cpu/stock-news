@@ -7,6 +7,7 @@ from pathlib import Path
 
 import requests
 import feedparser
+import re, html, json, urllib.parse
 
 # ─────────── CONFIG ───────────
 WEBHOOK      = os.environ["DISCORD_WEBHOOK"]
@@ -161,3 +162,42 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+def clean_html(raw: str, limit: int = 300) -> str:
+    """ลบแท็ก HTML ออกจากคำอธิบายข่าว เหลือแต่ข้อความล้วน"""
+    if not raw:
+        return ""
+    txt = re.sub(r"<[^>]+>", " ", raw)          # ตัดแท็ก
+    txt = html.unescape(txt)                     # แปลง &amp; -> &
+    txt = re.sub(r"\s+", " ", txt).strip()       # ยุบช่องว่าง
+    if len(txt) > limit:
+        txt = txt[:limit].rsplit(" ", 1)[0] + "..."
+    return txt
+
+
+def extract_image(entry) -> str | None:
+    """หา URL รูปจาก RSS entry ตามลำดับความน่าจะเจอ"""
+    # 1) media:thumbnail
+    for k in ("media_thumbnail", "media_content"):
+        media = entry.get(k)
+        if media and isinstance(media, list) and media[0].get("url"):
+            return media[0]["url"]
+    # 2) enclosure
+    for enc in entry.get("enclosures", []) or []:
+        if "image" in (enc.get("type") or ""):
+            return enc.get("href") or enc.get("url")
+    # 3) แกะ <img src="..."> จากตัว summary
+    blob = entry.get("summary", "") or entry.get("description", "")
+    m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', blob)
+    if m:
+        return m.group(1)
+    return None
+
+
+def summarize(entry) -> str:
+    """เอาคำอธิบายข่าวมาแบบสะอาด"""
+    raw = (entry.get("summary")
+           or entry.get("description")
+           or (entry.get("content", [{}])[0].get("value") if entry.get("content") else "")
+           or "")
+    return clean_html(raw)
