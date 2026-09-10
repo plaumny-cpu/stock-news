@@ -70,14 +70,30 @@ def passes_filter(title, summary):
     return True
 
 def post(source, title, link, summary, ts=None):
+    SOURCE_COLORS = {
+    "Yahoo Finance": 0x7B2FF7,
+    "Nasdaq":        0x0092CF,
+    "CNBC Markets":  0x005594,
+    "MarketWatch":   0x00A94F,
+    "Investing.com": 0xE8A33D,
+    "SEC 8-K":       0xC0392B,
+    "Finnhub":       0x1DB954,
+}
+
+def build_embed(item) -> dict:
+    desc = item.get("summary") or "_(แหล่งข่าวไม่ได้ให้คำอธิบาย)_"
     embed = {
-        "title": clean(title, 250) or "(no title)",
-        "url": link,
-        "description": clean(summary),
-        "color": COLORS.get(source, 0x95a5a6),
-        "footer": {"text": f"📰 {source}"},
-        "timestamp": (ts or datetime.now(timezone.utc)).isoformat(),
+        "title":       item["title"][:250],
+        "url":         item["link"],
+        "description": desc,
+        "color":       SOURCE_COLORS.get(item["source"], 0x5865F2),
+        "footer":      {"text": f"📰 {item['source']} · กดชื่อข่าวเพื่ออ่านเต็ม"},
     }
+    if item.get("published_iso"):
+        embed["timestamp"] = item["published_iso"]
+    if item.get("image"):
+        embed["image"] = {"url": item["image"]}
+    return embed
     for attempt in range(3):
         r = requests.post(WEBHOOK, json={"embeds": [embed]}, timeout=15)
         if r.status_code == 429:                       # rate limited
